@@ -58,10 +58,20 @@ const Dashboard = ({ portfolio, prices, portfolios, activePortfolioId, onSelectP
     }, [portfolio, prices, currency]); // Recalculate if currency changes
 
     // Check for Alerts
-    useEffect(() => {
-        if (!stats) return;
+    const [isAlertsArmed, setIsAlertsArmed] = useState(false);
 
-        // Check for High Loss
+    // Arm alerts after 60 seconds to avoid initial load spam
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsAlertsArmed(true);
+        }, 60000); // 1 minute delay
+        return () => clearTimeout(timer);
+    }, []);
+
+    useEffect(() => {
+        if (!stats || !isAlertsArmed) return;
+
+        // Check for High Loss (Total Profit vs Buy Price)
         const lossItem = stats.allWithProfit.find(item =>
             item.profitPercent <= -lossThreshold && !dismissedAlerts.has(item.id)
         );
@@ -71,7 +81,7 @@ const Dashboard = ({ portfolio, prices, portfolios, activePortfolioId, onSelectP
             return;
         }
 
-        // Check for High Gain
+        // Check for High Gain (Total Profit vs Buy Price)
         const gainItem = stats.allWithProfit.find(item =>
             item.profitPercent >= gainThreshold && !dismissedAlerts.has(item.id)
         );
@@ -80,7 +90,7 @@ const Dashboard = ({ portfolio, prices, portfolios, activePortfolioId, onSelectP
             setAlertItem({ ...gainItem, type: 'gain' });
         }
 
-    }, [stats, dismissedAlerts, lossThreshold, gainThreshold]);
+    }, [stats, dismissedAlerts, lossThreshold, gainThreshold, isAlertsArmed]);
 
     const handleDismissAlert = () => {
         if (alertItem) {

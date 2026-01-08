@@ -142,7 +142,12 @@ const Overview = ({ portfolios = [], prices = {} }) => {
             isMonthly = true;
         }
 
-        let runningTotal = totalBalance > 0 ? totalBalance : 1000; // Fallback base if empty
+        // Linear interpolation from Total Invested (start) to Total Balance (now)
+        // This visualizes the overall growth/loss over the period without fake noise.
+        const startValue = totalInvested > 0 ? totalInvested : totalBalance;
+        const endValue = totalBalance;
+        const diff = endValue - startValue;
+        const step = diff / points;
 
         for (let i = points; i >= 0; i--) {
             const date = new Date();
@@ -152,25 +157,22 @@ const Overview = ({ portfolios = [], prices = {} }) => {
                 date.setDate(date.getDate() - i);
             }
 
-            // Random fluctuation (-5% to +5%)
-            if (i > 0) {
-                const change = (Math.random() * 0.1) - 0.05;
-                runningTotal = runningTotal * (1 - change);
-            } else {
-                runningTotal = totalBalance; // Today is exact
-            }
+            // Calculate value at this point: Start + (Step * progress)
+            // progress goes from 0 to points. i goes from points down to 0.
+            // currentStep = points - i
+            const currentStep = points - i;
+            let value = startValue + (step * currentStep);
 
-            // Determine if gain or loss relative to previous day (for color)
-            const prevVal = i < points ? data[data.length - 1].value : runningTotal;
-            const isGain = runningTotal >= prevVal;
+            // Ensure we don't show negative if logic is weird, though price shouldn't be negative
+            if (value < 0) value = 0;
+
+            const prevVal = i < points ? data[data.length - 1].value : value;
+            const isGain = value >= prevVal;
 
             let label = '';
             if (chartRange === '1W') {
                 label = date.toLocaleDateString('en-US', { weekday: 'short' });
             } else if (chartRange === '1M') {
-                // Show date only for every 5th point to avoid clutter, or maybe just 'MMM d'
-                // For 30 points, showing every label might be tight on mobile. Recharts handles this usually?
-                // Let's shorten it.
                 label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             } else {
                 label = date.toLocaleDateString('en-US', { month: 'short' });
@@ -178,12 +180,12 @@ const Overview = ({ portfolios = [], prices = {} }) => {
 
             data.push({
                 day: label,
-                value: runningTotal,
+                value,
                 isGain
             });
         }
         return data;
-    }, [totalBalance, chartRange]);
+    }, [totalBalance, totalInvested, chartRange]);
 
 
 
