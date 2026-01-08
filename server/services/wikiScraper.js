@@ -1,0 +1,73 @@
+const fs = require('fs');
+const path = require('path');
+
+const CASES_FILE = path.join(__dirname, '../data/cases.json');
+
+// Memory Cache for Local Data
+let localCases = [];
+let localCasesMap = new Map();
+
+// Load Local Data on Startup
+try {
+    if (fs.existsSync(CASES_FILE)) {
+        const raw = fs.readFileSync(CASES_FILE, 'utf-8');
+        localCases = JSON.parse(raw);
+        localCases.forEach(c => localCasesMap.set(c.id, c));
+        console.log(`[WikiScraper] Loaded ${localCases.length} cases/collections from localDB.`);
+    } else {
+        console.warn("[WikiScraper] Local cases.json not found!");
+    }
+} catch (e) {
+    console.error("[WikiScraper] Failed to load local cases:", e);
+}
+
+
+let casesCache = { data: null, timestamp: 0 };
+let collectionsCache = new Map(); // id -> { data, timestamp }
+
+const scrapeCases = async () => {
+    // Priority: Local Data
+    // Since scraping is blocked, we rely on local data 100% for the list.
+    if (localCases.length > 0) {
+        // Return simplified list for the overview
+        return localCases.map(c => ({
+            id: c.id,
+            name: c.name,
+            image: c.image,
+            type: c.type,
+            url: `/cases/${c.id}`
+        }));
+    }
+
+    // Fallback? If local is empty invoke scraper (likely fail)
+    return [];
+};
+
+const scrapeCollection = async (collectionId) => {
+    // 1. Try Local Data
+    const local = localCasesMap.get(collectionId);
+    if (local) {
+        return local;
+    }
+
+    // 2. Try partial match in local? (e.g. if ID format differs)
+    // process_data.js saved IDs like "crate-4001", but frontend might request "revolution-case"
+    // My raw data has IDs like "crate-XXXX". The user's frontend requests slugs like "revolution-case".
+    // I NEED TO MAP THEM. Or checking name match. 
+
+    // The "id" in my processed data is "crate-XXXX".
+    // The "id" in my old fallback was "revolution_case".
+    // The frontend uses what verify_wiki returned.
+
+    // Issue: The frontend is built to request IDs that it got from `scrapeCases`.
+    // If `scrapeCases` returns IDs like "crate-4001", then frontend will ask for "crate-4001".
+    // So if I return localCases in scrapeCases, the IDs will be consistent.
+    // The only issue is if the user hardcoded some IDs in frontend?
+    // No, Overview.jsx iterates over `wikiCases`.
+
+    // So as long as scrapeCases returns the IDs from cases.json, scrapeCollection receiving those IDs will work.
+
+    return null;
+}
+
+module.exports = { scrapeCases, scrapeCollection };
