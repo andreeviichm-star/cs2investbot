@@ -141,11 +141,11 @@ const Dashboard = ({ portfolio, prices, portfolios, activePortfolioId, onSelectP
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <div className="text-xs text-gray-500 mb-1">{t('invested')}</div>
+                            <div className="text-xs text-gray-500 mb-1">{t('total_invested')}</div>
                             <div className="font-semibold text-gray-200">{formatPrice(stats.totalInvested)}</div>
                         </div>
                         <div>
-                            <div className="text-xs text-gray-500 mb-1">Profit/Loss</div>
+                            <div className="text-xs text-gray-500 mb-1">{t('profit_loss')}</div>
                             <div className={clsx("font-semibold flex items-center gap-1", stats.totalProfit >= 0 ? "text-green-400" : "text-red-400")}>
                                 {stats.totalProfit >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
                                 {stats.totalProfitPercent.toFixed(2)}%

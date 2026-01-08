@@ -82,7 +82,7 @@ function App() {
               onClick={() => setIsAddingItem(false)}
               className="p-2 text-gray-400 hover:text-white bg-white/5 rounded-full"
             >
-              Close
+              {t('close')}
             </button>
           </div>
           <div className="flex-1 overflow-y-auto scrollbar-hide">

@@ -112,7 +112,7 @@ const PortfolioList = ({ userId, portfolio = { items: [] }, prices = {}, activeP
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
                         <input
                             type="text"
-                            placeholder="Search items..."
+                            placeholder={t('search_placeholder')}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full bg-black/20 border border-white/10 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-cs-blue focus:bg-black/40 text-white placeholder-gray-600"
@@ -232,21 +232,21 @@ const PortfolioList = ({ userId, portfolio = { items: [] }, prices = {}, activeP
 
                                     {/* Detail 1: Buy Price */}
                                     <div className="bg-black/20 rounded-lg p-2 flex flex-col justify-center">
-                                        <div className="text-[10px] text-gray-500 uppercase tracking-wider font-bold mb-0.5">Buy Price</div>
+                                        <div className="text-[10px] text-gray-500 uppercase tracking-wider font-bold mb-0.5">{t('buy_price')}</div>
                                         <div className="text-xs font-mono text-gray-300">{formatPrice(item.buyPrice, item.currency)}</div>
                                     </div>
 
                                     {/* Detail 2: Quantity */}
                                     <div className="bg-black/20 rounded-lg p-2 flex flex-col justify-center">
-                                        <div className="text-[10px] text-gray-500 uppercase tracking-wider font-bold mb-0.5">Quantity</div>
+                                        <div className="text-[10px] text-gray-500 uppercase tracking-wider font-bold mb-0.5">{t('quantity')}</div>
                                         <div className="text-xs font-mono text-white">x{item.quantity}</div>
                                     </div>
 
                                     {/* Detail 3: Hold Time */}
                                     <div className="bg-black/20 rounded-lg p-2 flex flex-col justify-center">
-                                        <div className="text-[10px] text-gray-500 uppercase tracking-wider font-bold mb-0.5">Time Held</div>
+                                        <div className="text-[10px] text-gray-500 uppercase tracking-wider font-bold mb-0.5">{t('time_held')}</div>
                                         <div className="text-xs font-mono text-blue-300 flex items-center gap-1.5">
-                                            <Clock size={10} /> {daysHeld} days
+                                            <Clock size={10} /> {daysHeld} {t('days')}
                                         </div>
                                     </div>
 
@@ -256,7 +256,7 @@ const PortfolioList = ({ userId, portfolio = { items: [] }, prices = {}, activeP
                                             onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
                                             className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 w-full justify-center md:w-auto uppercase tracking-wide"
                                         >
-                                            <Trash2 size={14} /> Delete
+                                            <Trash2 size={14} /> {t('delete')}
                                         </button>
                                     </div>
                                 </div>

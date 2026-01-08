@@ -196,21 +196,21 @@ const Overview = ({ portfolios = [], prices = {} }) => {
         {
             title: t('total_balance'),
             value: formatPrice(totalBalance),
-            sub: "All Portfolios Combined",
+            sub: t('all_portfolios_combined'),
             bg: "bg-gradient-to-br from-indigo-500/20 via-purple-500/20 to-pink-500/20 border-purple-500/10",
             text: "text-white",
             border: "border-white/10"
         },
         {
-            title: "Total Invested",
+            title: t('total_invested'),
             value: formatPrice(totalInvested),
-            sub: "Cost Basis",
+            sub: t('cost_basis'),
             bg: "bg-gradient-to-br from-gray-800/40 to-gray-900/40 border-white/5",
             text: "text-gray-200",
             border: "border-white/10"
         },
         {
-            title: "Total Profit",
+            title: t('total_profit'),
             value: (totalProfit >= 0 ? '+' : '') + formatPrice(totalProfit),
             sub: (totalProfitPercent >= 0 ? '+' : '') + totalProfitPercent.toFixed(2) + "%",
             bg: totalProfit >= 0
@@ -268,7 +268,7 @@ const Overview = ({ portfolios = [], prices = {} }) => {
                                 <div className={clsx("text-sm font-medium mt-2 select-none", activeCard.isProfit ? activeCard.subColor : "text-gray-500")}>
                                     {activeCard.sub}
                                 </div>
-                                <div className="absolute bottom-3 right-3 opacity-20 text-[10px] uppercase font-bold tracking-widest text-white">Tap to switch</div>
+                                <div className="absolute bottom-3 right-3 opacity-20 text-[10px] uppercase font-bold tracking-widest text-white">{t('tap_to_switch')}</div>
                             </div>
 
                             {/* Indicators */}
