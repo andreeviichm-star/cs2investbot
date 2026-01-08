@@ -227,7 +227,22 @@ app.get('/api/portfolio/:userId', async (req, res) => {
             return res.json([{ ...newPortfolio, items: [] }]);
         }
 
-        res.json(portfolios);
+        // Map items to camelCase for all portfolios
+        const mappedPortfolios = portfolios.map(p => ({
+            ...p,
+            items: (p.items || []).map(i => ({
+                id: i.id,
+                name: i.name,
+                quantity: i.quantity,
+                buyPrice: i.buy_price,
+                currency: i.currency,
+                iconUrl: i.icon_url,
+                addedAt: i.added_at,
+                portfolioId: i.portfolio_id
+            }))
+        }));
+
+        res.json(mappedPortfolios);
     } catch (err) {
         console.error('Supabase Error (Get Portfolios):', err.message);
         res.status(500).json({ error: err.message });
