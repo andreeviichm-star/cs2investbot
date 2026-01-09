@@ -69,6 +69,12 @@ const fetchExternalImages = async () => {
                 items.forEach(item => {
                     if (item.name && item.image) {
                         iconMap.set(item.name, item.image);
+
+                        // Also index without '★' for Knives/Gloves
+                        if (item.name.includes('★')) {
+                            iconMap.set(item.name.replace(/^★\s?/, ''), item.image);
+                        }
+
                         count++;
                     }
                 });
