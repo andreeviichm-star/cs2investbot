@@ -92,8 +92,10 @@ const search = (query) => {
                     icon_url: getIcon(item.market_hash_name)
                 },
 
-                // Add price info while we're at it (bonus)
-                price: item.min_price || item.suggested_price
+                // Add price info
+                // User wants STEAM PRICE (suggested_price), not CASH PRICE (min_price)
+                price: item.suggested_price || item.min_price,
+                cash_price: item.min_price
             });
             if (results.length >= 50) break;
         }
@@ -105,7 +107,8 @@ const getPrice = (marketHashName) => {
     const item = itemsMap.get(marketHashName);
     if (!item) return null;
     return {
-        price: item.min_price || item.suggested_price, // Prefer min listing, else suggested
+        price: item.suggested_price || item.min_price, // Prefer Steam Price
+        cash_price: item.min_price,
         currency: 'USD',
         success: true
     };
