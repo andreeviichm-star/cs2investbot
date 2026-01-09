@@ -85,7 +85,7 @@ const AddItem = ({ userId, portfolios, activePortfolioId, onAdd }) => {
         setLoading(false);
         if (data?.success) {
             setPricePreview(data.price);
-            setBuyPrice(data.price);
+            setBuyPrice(''); // Let user set price manually
         }
     };
 
