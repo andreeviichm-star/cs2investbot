@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSettings } from './contexts/SettingsContext';
+import { useTranslation } from 'react-i18next';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import AddItem from './components/AddItem';
@@ -8,9 +9,28 @@ import Overview from './components/Overview';
 import Settings from './components/Settings';
 import { getPortfolios, getPrice } from './services/api';
 
-const USER_ID = 'test-user-1';
+// Helper to get persistent User ID
+const getUserId = () => {
+  // 1. Try Telegram WebApp
+  if (window.Telegram?.WebApp?.initDataUnsafe?.user?.id) {
+    return window.Telegram.WebApp.initDataUnsafe.user.id.toString();
+  }
+
+  // 2. Try LocalStorage (for browser testing)
+  let storedId = localStorage.getItem('cs2_device_id');
+  if (!storedId) {
+    // Generate simple ID if none exists
+    storedId = 'user_' + Math.floor(Math.random() * 1000000000);
+    localStorage.setItem('cs2_device_id', storedId);
+  }
+  return storedId;
+};
+
+// Initialize once
+const USER_ID = getUserId();
 
 function App() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isAddingItem, setIsAddingItem] = useState(false);
 
