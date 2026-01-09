@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
-const { scrapeCases, scrapeCollection } = require('./services/wikiScraper');
+const { scrapeCases, scrapeCollection, searchLocalItems } = require('./services/wikiScraper');
 const supabase = require('./db');
 
 const app = express();
@@ -170,14 +170,16 @@ app.get('/api/search', async (req, res) => {
             });
             res.json({ success: true, results: response.data.results });
         } else {
-            res.json({ success: true, results: [] });
+            console.log("Steam search returned empty, trying local wiki...");
+            const localResults = searchLocalItems(query);
+            res.json({ success: true, results: localResults });
         }
     } catch (error) {
         console.error('Search error:', error.message);
 
-        // If we have stale cache, maybe return it on error?
-        // For now, just error out or empty.
-        res.status(500).json({ error: 'Failed to search items' });
+        console.log("Steam search failed, using local wiki fallback...");
+        const localResults = searchLocalItems(query);
+        res.json({ success: true, results: localResults });
     }
 });
 

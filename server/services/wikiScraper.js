@@ -70,4 +70,34 @@ const scrapeCollection = async (collectionId) => {
     return null;
 }
 
-module.exports = { scrapeCases, scrapeCollection };
+const searchLocalItems = (query) => {
+    if (!query || query.length < 3) return [];
+
+    const lowerQuery = query.toLowerCase();
+    const results = [];
+    const seenNames = new Set();
+
+    // Iterate all collections/cases
+    for (const collection of localCases) {
+        if (!collection.items) continue;
+
+        for (const item of collection.items) {
+            if (seenNames.has(item.name)) continue;
+
+            if (item.name.toLowerCase().includes(lowerQuery)) {
+                results.push({
+                    hash_name: item.name,
+                    asset_description: {
+                        icon_url: item.image // Wiki data uses 'image' key, we need to map to Steam format if possible or handle in frontend
+                    }
+                });
+                seenNames.add(item.name);
+
+                if (results.length >= 20) return results; // Limit results
+            }
+        }
+    }
+    return results;
+};
+
+module.exports = { scrapeCases, scrapeCollection, searchLocalItems };
