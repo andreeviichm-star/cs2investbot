@@ -87,6 +87,25 @@ function App() {
     setIsAddingItem(false);
   };
 
+  const handlePortfolioCreate = (newPortfolio) => {
+    setPortfolios(prev => [...prev, newPortfolio]);
+    // If it's the first one, select it
+    if (portfolios.length === 0) setActivePortfolioId(newPortfolio.id);
+  };
+
+  const handlePortfolioDelete = (id) => {
+    setPortfolios(prev => prev.filter(p => p.id !== id));
+    if (activePortfolioId === id) {
+      setActivePortfolioId(null);
+      // Or set to first available?
+      // Let useEffect handle re-selection or leave null
+    }
+  };
+
+  const handlePortfolioRename = (id, newName) => {
+    setPortfolios(prev => prev.map(p => p.id === id ? { ...p, name: newName } : p));
+  };
+
   useEffect(() => {
     loadPrices();
     const interval = setInterval(loadPrices, 60000); // 1 min update
@@ -148,7 +167,10 @@ function App() {
             <Settings
               userId={USER_ID}
               portfolios={portfolios}
-              onUpdate={loadPortfolios}
+              // onUpdate={loadPortfolios} // Old slow way
+              onCreate={handlePortfolioCreate}
+              onDelete={handlePortfolioDelete}
+              onRename={handlePortfolioRename}
             />
           )}
         </>

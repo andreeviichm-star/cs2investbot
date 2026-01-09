@@ -259,17 +259,9 @@ app.post('/api/portfolio/:userId', async (req, res) => {
 
         if (error) throw error;
 
-        // Return all portfolios to keep frontend state valid
-        // Or just return the new one and let frontend append. 
-        // Existing frontend expects { success: true, portfolio, portfolios: [] }
-        // Let's refetch all for consistency
-        const { data: allPortfolios } = await supabase
-            .from('portfolios')
-            .select('*, items:portfolio_items(*)')
-            .eq('user_id', userId)
-            .order('created_at', { ascending: true });
-
-        res.json({ success: true, portfolio: { ...data, items: [] }, portfolios: allPortfolios });
+        // Return only the created portfolio to be fast
+        // Frontend should update local state instead of reloading everything
+        res.json({ success: true, portfolio: { ...data, items: [] } });
     } catch (err) {
         console.error('Supabase Error (Create Portfolio):', err.message);
         res.status(500).json({ error: err.message });

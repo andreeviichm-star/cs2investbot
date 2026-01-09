@@ -4,7 +4,7 @@ import { useSettings } from '../contexts/SettingsContext';
 import { ArrowLeft, Save, Wallet, Pencil, Trash2, TrendingUp, TrendingDown } from 'lucide-react';
 import { createPortfolio, renamePortfolio, deletePortfolio } from '../services/api';
 
-const Settings = ({ userId, portfolios, onUpdate }) => {
+const Settings = ({ userId, portfolios, onCreate, onDelete, onRename }) => {
     const { t } = useTranslation();
     const {
         language, setLanguage,
@@ -26,13 +26,13 @@ const Settings = ({ userId, portfolios, onUpdate }) => {
         if (!editName.trim()) return;
         await renamePortfolio(userId, id, editName);
         setEditingId(null);
-        if (onUpdate) onUpdate();
+        if (onRename) onRename(id, editName);
     };
 
     const handleDeletePortfolio = async (id) => {
         if (confirm(t('confirm_delete_portfolio'))) {
             await deletePortfolio(userId, id);
-            if (onUpdate) onUpdate();
+            if (onDelete) onDelete(id);
         }
     };
 
@@ -40,9 +40,11 @@ const Settings = ({ userId, portfolios, onUpdate }) => {
         e.preventDefault();
         if (!newPortfolioName) return;
 
-        await createPortfolio(userId, newPortfolioName);
+        const res = await createPortfolio(userId, newPortfolioName);
         setNewPortfolioName('');
-        if (onUpdate) onUpdate();
+        if (res && res.success && onCreate) {
+            onCreate(res.portfolio);
+        }
         alert('Portfolio Created');
     };
 
