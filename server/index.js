@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
-const axios = require('axios');
 const { scrapeCases, scrapeCollection, searchLocalItems } = require('./services/wikiScraper');
 const skinport = require('./services/skinport');
 const supabase = require('./db');
