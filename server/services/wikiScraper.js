@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const axios = require('axios');
+const axios = require('axios'); // Added axios
 
 const CASES_FILE = path.join(__dirname, '../data/cases.json');
 
@@ -23,116 +23,12 @@ try {
 }
 
 
-let casesCache = { data: null, timestamp: 0 };
-let collectionsCache = new Map(); // id -> { data, timestamp }
-
-const scrapeCases = async () => {
-    // Priority: Local Data
-    // Since scraping is blocked, we rely on local data 100% for the list.
-    if (localCases.length > 0) {
-        // Return simplified list for the overview
-        return localCases.map(c => ({
-            id: c.id,
-            name: c.name,
-            image: c.image,
-            type: c.type,
-            url: `/cases/${c.id}`
-        }));
-    }
-
-    // Fallback? If local is empty invoke scraper (likely fail)
-    return [];
-};
-
-const scrapeCollection = async (collectionId) => {
-    // 1. Try Local Data
-    const local = localCasesMap.get(collectionId);
-    if (local) {
-        return local;
-    }
-
-    // 2. Try partial match in local? (e.g. if ID format differs)
-    // process_data.js saved IDs like "crate-4001", but frontend might request "revolution-case"
-    // My raw data has IDs like "crate-XXXX". The user's frontend requests slugs like "revolution-case".
-    // I NEED TO MAP THEM. Or checking name match. 
-
-    // The "id" in my processed data is "crate-XXXX".
-    // The "id" in my old fallback was "revolution_case".
-    // The frontend uses what verify_wiki returned.
-
-    // Issue: The frontend is built to request IDs that it got from `scrapeCases`.
-    // If `scrapeCases` returns IDs like "crate-4001", then frontend will ask for "crate-4001".
-    // So if I return localCases in scrapeCases, the IDs will be consistent.
-    // The only issue is if the user hardcoded some IDs in frontend?
-    // No, Overview.jsx iterates over `wikiCases`.
-
-    // So as long as scrapeCases returns the IDs from cases.json, scrapeCollection receiving those IDs will work.
-
-    return null;
-}
-
-const searchLocalItems = (query) => {
-    if (!query || query.length < 3) return [];
-
-    let lowerQuery = query.toLowerCase();
-
-    // Russian Mapping for better local search
-    const RU_MAPPING = {
-        'кейс': 'case',
-        'коллекция': 'collection',
-        'капсула': 'capsule',
-        'наклейка': 'sticker',
-        'сувенир': 'souvenir',
-        'набор': 'package',
-        'перчатки': 'gloves',
-        'нож': 'knife',
-        'авп': 'awp',
-        'калаш': 'ak-47',
-        'эмка': 'm4a',
-        'юсп': 'usp',
-        'глок': 'glock',
-        'дигл': 'desert eagle'
-    };
-
-    // Replace known Russian terms with English equivalents
-    for (const [ru, en] of Object.entries(RU_MAPPING)) {
-        if (lowerQuery.includes(ru)) {
-            lowerQuery = lowerQuery.replace(ru, en);
-        }
-    }
-
-    const results = [];
-    const seenNames = new Set();
-
-    // Iterate all collections/cases
-    for (const collection of localCases) {
-        if (!collection.items) continue;
-
-        for (const item of collection.items) {
-            if (seenNames.has(item.name)) continue;
-
-            if (item.name.toLowerCase().includes(lowerQuery)) {
-                results.push({
-                    hash_name: item.name,
-                    asset_description: {
-                        icon_url: item.image // Wiki data uses 'image' key, we need to map to Steam format if possible or handle in frontend
-                    }
-                });
-                seenNames.add(item.name);
-
-                if (results.length >= 20) return results; // Limit results
-            }
-        }
-    }
-    return results;
-};
-
 // Map for O(1) icon lookup by market hash name
-// Populated after load
+// Populated after load AND external fetch
 const iconMap = new Map();
 if (localCases.length > 0) {
     localCases.forEach(collection => {
-        // Index the container itself (e.g. "Fever Case", "The Chop Shop Collection")
+        // Index the container itself
         if (collection.name && collection.image) {
             iconMap.set(collection.name, collection.image);
         }
@@ -146,27 +42,117 @@ if (localCases.length > 0) {
     });
 }
 
+// Fetch External Image Databases (ByMykel)
+const fetchExternalImages = async () => {
+    try {
+        console.log('[WikiScraper] Fetching external image databases...');
+        const [skinsRes, cratesRes, stickersRes] = await Promise.all([
+            axios.get('https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/skins.json'),
+            axios.get('https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/crates.json'),
+            axios.get('https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/stickers.json')
+        ]);
+
+        let count = 0;
+
+        // Helper to add
+        const add = (items) => {
+            if (Array.isArray(items)) {
+                items.forEach(item => {
+                    if (item.name && item.image) {
+                        iconMap.set(item.name, item.image);
+                        count++;
+                    }
+                });
+            }
+        };
+
+        add(skinsRes.data);
+        add(cratesRes.data);
+        add(stickersRes.data);
+
+        console.log(`[WikiScraper] Loaded ${count} external images.`);
+
+    } catch (e) {
+        console.error('[WikiScraper] Failed to fetch external images:', e.message);
+    }
+};
+
+// Start fetching immediately/async & export promise
+const imageLoadingPromise = fetchExternalImages();
+
+const scrapeCases = async () => {
+    if (localCases.length > 0) {
+        return localCases.map(c => ({
+            id: c.id,
+            name: c.name,
+            image: c.image,
+            type: c.type,
+            url: `/cases/${c.id}`
+        }));
+    }
+    return [];
+};
+
+const scrapeCollection = async (collectionId) => {
+    const local = localCasesMap.get(collectionId);
+    if (local) return local;
+    return null;
+}
+
+const searchLocalItems = (query) => {
+    if (!query || query.length < 3) return [];
+
+    let lowerQuery = query.toLowerCase();
+
+    // Russian Mapping
+    const RU_MAPPING = {
+        'кейс': 'case', 'коллекция': 'collection', 'капсула': 'capsule',
+        'наклейка': 'sticker', 'сувенир': 'souvenir', 'набор': 'package',
+        'перчатки': 'gloves', 'нож': 'knife', 'авп': 'awp',
+        'калаш': 'ak-47', 'эмка': 'm4a', 'юсп': 'usp',
+        'глок': 'glock', 'дигл': 'desert eagle'
+    };
+
+    for (const [ru, en] of Object.entries(RU_MAPPING)) {
+        if (lowerQuery.includes(ru)) lowerQuery = lowerQuery.replace(ru, en);
+    }
+
+    const results = [];
+    const seenNames = new Set();
+
+    for (const collection of localCases) {
+        if (!collection.items) continue;
+        for (const item of collection.items) {
+            if (seenNames.has(item.name)) continue;
+            if (item.name.toLowerCase().includes(lowerQuery)) {
+                results.push({
+                    hash_name: item.name,
+                    asset_description: {
+                        icon_url: item.image
+                    }
+                });
+                seenNames.add(item.name);
+                if (results.length >= 20) return results;
+            }
+        }
+    }
+    return results;
+};
+
 const getIcon = (marketHashName) => {
     // 1. Exact Match
     if (iconMap.has(marketHashName)) return iconMap.get(marketHashName);
 
-    // 2. Fuzzy Match (Strip prefixes/wear/phase)
-    // Prefixes: ★, StatTrak™, Souvenir, etc.
-    // Suffixes: (Field-Tested), (Phase 1), etc.
+    // 2. Fuzzy Match
     let cleanName = marketHashName
-        .replace(/^★\s?/, '') // Remove Star
-        .replace(/^(StatTrak™|Souvenir)\s?/, '') // Remove Type
-        // Remove Wear/Phase/Stickers info at the end (parentheses)
+        .replace(/^★\s?/, '')
+        .replace(/^(StatTrak™|Souvenir)\s?/, '')
         .replace(/\s\([^)]+\)$/, '')
-        // Clean up double spaces if any
         .trim();
 
     if (iconMap.has(cleanName)) return iconMap.get(cleanName);
 
-    // 3. Fallback for Cases/Keys (sometimes naming differs slightly?)
-    // e.g. "Fever Case" vs "Fever Dream Case" (unlikely for cases but possible)
-
     return null;
 };
 
-module.exports = { scrapeCases, scrapeCollection, searchLocalItems, getIcon };
+module.exports = { scrapeCases, scrapeCollection, searchLocalItems, getIcon, imageLoadingPromise };

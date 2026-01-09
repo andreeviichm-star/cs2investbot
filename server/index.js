@@ -133,7 +133,7 @@ app.get('/api/price', async (req, res) => {
         if (currency !== 'USD') {
             const rates = await fetchExchangeRates(); // { USD: 1, RUB: 100... }
             if (rates[currency]) {
-                price = price * rates[currency];
+                price = Number((price * rates[currency]).toFixed(2));
             }
         }
 
