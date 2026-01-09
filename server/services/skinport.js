@@ -7,22 +7,7 @@ let lastFetch = 0;
 const CACHE_TTL = 12 * 60 * 60 * 1000; // 12 hours
 
 // Russian Mapping for search
-const RU_MAPPING = {
-    'кейс': 'case',
-    'коллекция': 'collection',
-    'капсула': 'capsule',
-    'наклейка': 'sticker',
-    'сувенир': 'souvenir',
-    'набор': 'package',
-    'перчатки': 'gloves',
-    'нож': 'knife',
-    'авп': 'awp',
-    'калаш': 'ak-47',
-    'эмка': 'm4a',
-    'юсп': 'usp',
-    'глок': 'glock',
-    'дигл': 'desert eagle'
-};
+const RU_MAPPING = require('../data/ru_mapping');
 
 const init = async () => {
     if (Date.now() - lastFetch < CACHE_TTL && itemsCache.length > 0) {
@@ -70,12 +55,21 @@ const search = (query) => {
 
     let lowerQuery = query.toLowerCase();
 
-    // Apply RU Mapping
-    for (const [ru, en] of Object.entries(RU_MAPPING)) {
-        if (lowerQuery.includes(ru)) {
-            lowerQuery = lowerQuery.replace(ru, en);
+    // Apply RU Mapping (naive word replacement)
+    // We sort keys by length desc to avoid partial replacements (e.g. replacing part of a word)
+    // But for now, simple iter is fine for single keywords.
+    // Better strategy: Replace known phrases first.
+
+    // Check if query contains Russian chars
+    if (/[а-яА-ЯёЁ]/.test(lowerQuery)) {
+        for (const [ru, en] of Object.entries(RU_MAPPING)) {
+            if (lowerQuery.includes(ru)) {
+                lowerQuery = lowerQuery.replace(new RegExp(ru, 'g'), en);
+            }
         }
     }
+
+    // ... search logic
 
     // Filter Items
     // Limit to 20 results for performance
