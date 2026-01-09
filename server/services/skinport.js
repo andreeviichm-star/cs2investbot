@@ -86,16 +86,14 @@ const search = (query) => {
 
     for (const item of itemsCache) {
         if (item.market_hash_name.toLowerCase().includes(lowerQuery)) {
+            const steamPrice = item.suggested_price || item.min_price;
             results.push({
                 hash_name: item.market_hash_name,
                 asset_description: {
                     icon_url: getIcon(item.market_hash_name)
                 },
-
-                // Add price info
-                // User wants STEAM PRICE (suggested_price), not CASH PRICE (min_price)
-                price: item.suggested_price || item.min_price,
-                cash_price: item.min_price
+                price: steamPrice ? Number(steamPrice.toFixed(2)) : 0,
+                cash_price: item.min_price ? Number(item.min_price.toFixed(2)) : 0
             });
             if (results.length >= 50) break;
         }
@@ -106,9 +104,10 @@ const search = (query) => {
 const getPrice = (marketHashName) => {
     const item = itemsMap.get(marketHashName);
     if (!item) return null;
+    const steamPrice = item.suggested_price || item.min_price;
     return {
-        price: item.suggested_price || item.min_price, // Prefer Steam Price
-        cash_price: item.min_price,
+        price: steamPrice ? Number(steamPrice.toFixed(2)) : 0, // Prefer Steam Price
+        cash_price: item.min_price ? Number(item.min_price.toFixed(2)) : 0,
         currency: 'USD',
         success: true
     };
