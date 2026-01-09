@@ -231,7 +231,7 @@ app.get('/api/portfolio/:userId', async (req, res) => {
                 buyPrice: i.buy_price,
                 currency: i.currency,
                 iconUrl: i.icon_url,
-                addedAt: i.added_at,
+                addedAt: i.created_at, // Map standard timestamp
                 portfolioId: i.portfolio_id
             }))
         }));
@@ -348,7 +348,7 @@ app.post('/api/portfolio/:userId/:portfolioId/add', async (req, res) => {
             buyPrice: data.buy_price,
             currency: data.currency,
             iconUrl: data.icon_url,
-            addedAt: data.added_at
+            addedAt: data.created_at
         };
 
         // We need to return the updated portfolio structure or just the success

@@ -130,62 +130,82 @@ const Overview = ({ portfolios = [], prices = {} }) => {
     // Chart Time Range
     const [chartRange, setChartRange] = useState('1W'); // '1W', '1M', '1Y'
 
-    // Generate Mock History Data based on current Total and selected Range
+    // Generate Real History Data based on Item Purchase Dates
     const historyData = useMemo(() => {
         const data = [];
-        let points = 7;
-        let isMonthly = false;
+        const isMonthly = chartRange === '1M';
+        const isYearly = chartRange === '1Y';
 
-        if (chartRange === '1M') points = 30;
-        if (chartRange === '1Y') {
-            points = 12;
-            isMonthly = true;
-        }
+        let days = 7;
+        if (isMonthly) days = 30;
+        if (isYearly) days = 365;
 
-        // Linear interpolation from Total Invested (start) to Total Balance (now)
-        // This visualizes the overall growth/loss over the period without fake noise.
-        const startValue = totalInvested > 0 ? totalInvested : totalBalance;
-        const endValue = totalBalance;
-        const diff = endValue - startValue;
-        const step = diff / points;
+        // Number of data points to show on chart
+        const points = isYearly ? 12 : days;
 
-        for (let i = points; i >= 0; i--) {
+        // Current time
+        const now = new Date();
+
+        // Generate points backwards
+        for (let i = points - 1; i >= 0; i--) {
+            // Determine the date for this data point
             const date = new Date();
-            if (isMonthly) {
-                date.setMonth(date.getMonth() - i);
+            if (isYearly) {
+                // For yearly, show last 12 months
+                date.setMonth(now.getMonth() - i);
+                // Set to end of month? Or same day. Let's do same day to keep it simple.
             } else {
-                date.setDate(date.getDate() - i);
+                date.setDate(now.getDate() - i);
             }
+            // Use end of day for accumulation
+            date.setHours(23, 59, 59, 999);
 
-            // Calculate value at this point: Start + (Step * progress)
-            // progress goes from 0 to points. i goes from points down to 0.
-            // currentStep = points - i
-            const currentStep = points - i;
-            let value = startValue + (step * currentStep);
+            let pointValue = 0;
 
-            // Ensure we don't show negative if logic is weird, though price shouldn't be negative
-            if (value < 0) value = 0;
+            // Calculate Portfolio Value at this specific date
+            portfolios.forEach(p => {
+                p.items.forEach(item => {
+                    // Item addedAt timestamp (from created_at on server)
+                    const addedAt = item.addedAt ? new Date(item.addedAt) : new Date(0); // If missing, assume old? Or 0.
 
-            const prevVal = i < points ? data[data.length - 1].value : value;
-            const isGain = value >= prevVal;
+                    // If we owned the item at this date
+                    if (addedAt <= date) {
+                        // Use current price for value (Simplified History)
+                        // Ideally we'd valid price history, but for now:
+                        // Value = Quantity * Current Price
+                        // This shows "What is my current inventory worth over time assuming I held it"
+                        // OR "What was my inventory worth THEN?" -> requires price history.
+                        // User asks: "value before today wrong".
+                        // If I assume current price, then:
+                        // Day 1 (empty): 0
+                        // Day 2 (bought): Qty * CurrentPrice
+                        // This matches user expectation: "was 0 before".
+                        const price = prices[item.name]?.price || item.buyPrice || 0;
+                        pointValue += price * item.quantity;
+                    }
+                });
+            });
 
+            // Label Formatting
             let label = '';
-            if (chartRange === '1W') {
-                label = date.toLocaleDateString('en-US', { weekday: 'short' });
-            } else if (chartRange === '1M') {
-                label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            } else {
-                label = date.toLocaleDateString('en-US', { month: 'short' });
-            }
+            if (chartRange === '1W') label = date.toLocaleDateString('en-US', { weekday: 'short' });
+            else if (chartRange === '1M') label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            else label = date.toLocaleDateString('en-US', { month: 'short' });
 
             data.push({
-                day: label,
-                value,
-                isGain
+                name: label,
+                value: Number(pointValue.toFixed(2))
             });
         }
+
         return data;
-    }, [totalBalance, totalInvested, chartRange]);
+    }, [chartRange, portfolios, prices]); // Removed totalBalance dependency, added portfolios/prices
+
+    /*
+    // OLD MOCK LOGIC REMOVED
+    */
+
+
 
 
 
