@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { searchLocalItems } = require('./wikiScraper'); // Import for icon lookup
+const { searchLocalItems, getIcon } = require('./wikiScraper'); // Import for icon lookup
 
 let itemsCache = [];
 let itemsMap = new Map(); // Name -> Item Data
@@ -39,7 +39,8 @@ const init = async () => {
                 tradable: 0
             },
             headers: {
-                'Accept-Encoding': 'br'
+                'Accept-Encoding': 'br',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
             }
         });
 
@@ -57,6 +58,10 @@ const init = async () => {
         }
     } catch (e) {
         console.error('[Skinport] Failed to fetch items:', e.message);
+        if (e.response) {
+            console.error('[Skinport] Status:', e.response.status);
+            console.error('[Skinport] Data:', JSON.stringify(e.response.data).substring(0, 200));
+        }
     }
 };
 
@@ -106,4 +111,7 @@ const getPrice = (marketHashName) => {
     };
 };
 
-module.exports = { init, search, getPrice };
+const isLoaded = () => itemsCache.length > 0;
+const getCount = () => itemsCache.length;
+
+module.exports = { init, search, getPrice, isLoaded, getCount };
