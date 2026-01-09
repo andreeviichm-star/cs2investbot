@@ -189,7 +189,9 @@ const PortfolioList = ({ userId, portfolio = { items: [] }, prices = {}, activeP
                                         <div className="w-12 h-12 bg-gradient-to-br from-gray-700 to-gray-900 rounded-lg flex items-center justify-center shrink-0 overflow-hidden relative">
                                             {item.iconUrl ? (
                                                 <ItemImage
-                                                    src={`https://community.cloudflare.steamstatic.com/economy/image/${item.iconUrl}/360fx360f`}
+                                                    src={item.iconUrl?.startsWith('http')
+                                                        ? item.iconUrl
+                                                        : `https://community.cloudflare.steamstatic.com/economy/image/${item.iconUrl}/360fx360f`}
                                                     alt={item.name}
                                                     className="w-full h-full object-contain"
                                                 />

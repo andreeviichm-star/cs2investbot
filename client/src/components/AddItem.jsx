@@ -163,7 +163,9 @@ const AddItem = ({ userId, portfolios, activePortfolioId, onAdd }) => {
                                         className="w-full text-left px-4 py-3 hover:bg-white/5 flex items-center gap-3 border-b border-white/5 last:border-0"
                                     >
                                         <ItemImage
-                                            src={`https://community.cloudflare.steamstatic.com/economy/image/${result.asset_description.icon_url}/360fx360f`}
+                                            src={result.asset_description.icon_url?.startsWith('http')
+                                                ? result.asset_description.icon_url
+                                                : `https://community.cloudflare.steamstatic.com/economy/image/${result.asset_description.icon_url}/360fx360f`}
                                             alt=""
                                             className="w-8 h-8 object-contain"
                                         />
