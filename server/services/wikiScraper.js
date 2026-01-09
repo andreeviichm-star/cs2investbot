@@ -123,8 +123,7 @@ const searchLocalItems = (query) => {
             }
         }
     }
-}
-return results;
+    return results;
 };
 
 // Map for O(1) icon lookup by market hash name
@@ -132,6 +131,12 @@ return results;
 const iconMap = new Map();
 if (localCases.length > 0) {
     localCases.forEach(collection => {
+        // Index the container itself (e.g. "Fever Case", "The Chop Shop Collection")
+        if (collection.name && collection.image) {
+            iconMap.set(collection.name, collection.image);
+        }
+
+        // Index items inside
         if (collection.items) {
             collection.items.forEach(item => {
                 iconMap.set(item.name, item.image);
@@ -141,7 +146,22 @@ if (localCases.length > 0) {
 }
 
 const getIcon = (marketHashName) => {
-    return iconMap.get(marketHashName) || null;
+    // 1. Exact Match
+    if (iconMap.has(marketHashName)) return iconMap.get(marketHashName);
+
+    // 2. Fuzzy Match (Strip prefixes/wear)
+    let cleanName = marketHashName
+        .replace('★ ', '')
+        .replace('StatTrak™ ', '')
+        .replace('Souvenir ', '')
+        .replace(/\s\([^)]+\)$/, ''); // Remove (Field-Tested), (Factory New), etc.
+
+    if (iconMap.has(cleanName)) return iconMap.get(cleanName);
+
+    // 3. Fallback for Cases/Keys (sometimes naming differs slightly?)
+    // e.g. "Fever Case" vs "Fever Dream Case" (unlikely for cases but possible)
+
+    return null;
 };
 
 module.exports = { scrapeCases, scrapeCollection, searchLocalItems, getIcon };
