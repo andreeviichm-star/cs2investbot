@@ -8,7 +8,7 @@ import SmartAlert from './SmartAlert';
 
 const Dashboard = ({ portfolio, prices, portfolios, activePortfolioId, onSelectPortfolio, onAddClick }) => {
     const { t } = useTranslation();
-    const { formatPrice, currency, convertPrice, lossThreshold, gainThreshold } = useSettings();
+    const { formatPrice, currency, convertPrice, lossThreshold, gainThreshold, notificationsEnabled } = useSettings();
 
     // Alert State
     const [alertItem, setAlertItem] = useState(null);
@@ -69,7 +69,7 @@ const Dashboard = ({ portfolio, prices, portfolios, activePortfolioId, onSelectP
     }, []);
 
     useEffect(() => {
-        if (!stats || !isAlertsArmed) return;
+        if (!stats || !isAlertsArmed || !notificationsEnabled) return;
 
         // Check for High Loss (Total Profit vs Buy Price)
         const lossItem = stats.allWithProfit.find(item =>

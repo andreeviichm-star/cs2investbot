@@ -11,7 +11,8 @@ const Settings = ({ userId, portfolios, onCreate, onDelete, onRename }) => {
         currency, setCurrency,
         exchangeRates, updateExchangeRate,
         lossThreshold, setLossThreshold,
-        gainThreshold, setGainThreshold
+        gainThreshold, setGainThreshold,
+        notificationsEnabled, setNotificationsEnabled
     } = useSettings();
     const [newPortfolioName, setNewPortfolioName] = useState('');
     const [editingId, setEditingId] = useState(null);
@@ -153,6 +154,21 @@ const Settings = ({ userId, portfolios, onCreate, onDelete, onRename }) => {
 
             {/* Gain/Loss Thresholds Section */}
             <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-6">
+
+                {/* Master Toggle */}
+                <div className="flex justify-between items-center pb-2 border-b border-white/5">
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-white">
+                        {t('enable_notifications') || "Enable Notifications"}
+                    </h3>
+                    <button
+                        onClick={() => setNotificationsEnabled(!notificationsEnabled)}
+                        className={`w-12 h-6 rounded-full p-1 transition-colors duration-200 ease-in-out ${notificationsEnabled ? 'bg-cs-blue' : 'bg-white/10'}`}
+                    >
+                        <div
+                            className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${notificationsEnabled ? 'translate-x-6' : 'translate-x-0'}`}
+                        />
+                    </button>
+                </div>
 
                 {/* Loss Threshold */}
                 <div className="space-y-4">

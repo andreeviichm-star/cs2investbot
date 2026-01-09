@@ -18,6 +18,15 @@ export const SettingsProvider = ({ children }) => {
     });
     const [lossThreshold, setLossThreshold] = useState(50);
     const [gainThreshold, setGainThreshold] = useState(50);
+    const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
+        const stored = localStorage.getItem('settings_notifications');
+        return stored !== null ? JSON.parse(stored) : true;
+    });
+
+    // Persist Notifications
+    useEffect(() => {
+        localStorage.setItem('settings_notifications', JSON.stringify(notificationsEnabled));
+    }, [notificationsEnabled]);
 
     // Persist & Apply Language Change
     useEffect(() => {
@@ -91,7 +100,9 @@ export const SettingsProvider = ({ children }) => {
             lossThreshold,
             setLossThreshold,
             gainThreshold,
-            setGainThreshold
+            setGainThreshold,
+            notificationsEnabled,
+            setNotificationsEnabled
         }}>
             {children}
         </SettingsContext.Provider>
