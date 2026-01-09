@@ -106,6 +106,31 @@ function App() {
     setPortfolios(prev => prev.map(p => p.id === id ? { ...p, name: newName } : p));
   };
 
+  const handlePortfolioMoveItem = (itemId, sourceId, targetId) => {
+    setPortfolios(prev => {
+      // Find item in source
+      const source = prev.find(p => p.id === sourceId);
+      if (!source) return prev;
+      const item = source.items.find(i => i.id === itemId);
+      if (!item) return prev;
+
+      // Create updated Item with new portfolioId
+      const movedItem = { ...item, portfolioId: targetId };
+
+      return prev.map(p => {
+        if (p.id === sourceId) {
+          // Remove from source
+          return { ...p, items: p.items.filter(i => i.id !== itemId) };
+        }
+        if (p.id === targetId) {
+          // Add to target
+          return { ...p, items: [...p.items, movedItem] };
+        }
+        return p;
+      });
+    });
+  };
+
   useEffect(() => {
     loadPrices();
     const interval = setInterval(loadPrices, 60000); // 1 min update
@@ -156,10 +181,11 @@ function App() {
               userId={USER_ID}
               portfolio={getActivePortfolio()}
               prices={prices}
-              portfolios={portfolios}
+              portfolios={portfolios} // Needs all portfolios for Move target selection
               activePortfolioId={activePortfolioId}
               onSelectPortfolio={setActivePortfolioId}
               onUpdate={loadPortfolios}
+              onMove={handlePortfolioMoveItem} // Pass the handler
               onAddClick={() => setIsAddingItem(true)}
             />
           )}

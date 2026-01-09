@@ -412,6 +412,28 @@ app.delete('/api/portfolio/:userId/:portfolioId/items/:itemId', async (req, res)
     }
 });
 
+// Move Item to Another Portfolio
+app.put('/api/portfolio/:userId/:portfolioId/items/:itemId/move', async (req, res) => {
+    const { itemId } = req.params;
+    const { targetPortfolioId } = req.body;
+
+    if (!targetPortfolioId) return res.status(400).json({ error: 'Target Portfolio ID required' });
+
+    try {
+        const { error } = await supabase
+            .from('portfolio_items')
+            .update({ portfolio_id: targetPortfolioId })
+            .eq('id', itemId);
+
+        if (error) throw error;
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Supabase Error (Move Item):', err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Status/Debug Endpoint
 app.get('/api/status', (req, res) => {
     try {

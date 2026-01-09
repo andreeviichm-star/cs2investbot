@@ -68,6 +68,16 @@ export const addItemToPortfolio = async (userId, portfolioId, item) => {
     }
 };
 
+export const moveItem = async (userId, currentPortfolioId, itemId, targetPortfolioId) => {
+    try {
+        const response = await api.put(`/portfolio/${userId}/${currentPortfolioId}/items/${itemId}/move`, { targetPortfolioId });
+        return response.data;
+    } catch (error) {
+        console.error('Error moving item:', error);
+        return null;
+    }
+};
+
 export const deleteItem = async (userId, portfolioId, itemId) => {
     try {
         const response = await api.delete(`/portfolio/${userId}/${portfolioId}/items/${itemId}`);

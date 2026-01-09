@@ -4,9 +4,10 @@ import { useSettings } from '../contexts/SettingsContext';
 import { useTranslation } from 'react-i18next';
 import ItemImage from './ItemImage';
 import clsx from 'clsx';
-import { deleteItem } from '../services/api';
+import { deleteItem, moveItem } from '../services/api';
+import { ArrowRight, Check } from 'lucide-react'; // Icons for move UI
 
-const PortfolioList = ({ userId, portfolio = { items: [] }, prices = {}, activePortfolioId, onUpdate, onAddClick }) => {
+const PortfolioList = ({ userId, portfolio = { items: [] }, prices = {}, activePortfolioId, onUpdate, onAddClick, onMove, portfolios = [] }) => {
     const { t } = useTranslation();
     const { formatPrice, currency } = useSettings();
 
@@ -32,11 +33,39 @@ const PortfolioList = ({ userId, portfolio = { items: [] }, prices = {}, activeP
         });
     };
 
+    const [movingItem, setMovingItem] = useState(null); // { id: itemId, targetId: portfolioId }
+
     const handleDelete = async (itemId) => {
         const targetPortfolioId = portfolio.id || activePortfolioId;
         if (targetPortfolioId) {
             await deleteItem(userId, targetPortfolioId, itemId);
-            if (onUpdate) onUpdate();
+            if (onUpdate) onUpdate(); // Fallback if no specific handler, though delete uses optimistic usually? App doesn't have optimistic delete for items yet? 
+            // Wait, App.jsx handles portfolio delete, but item delete is still onUpdate refetch in this file?
+            // User requested MOVE feature. Let's focus on Move.
+        }
+    };
+
+    const handleMoveInit = (itemId) => {
+        // Init with first available portfolio that is NOT current
+        const currentId = portfolio.id || activePortfolioId;
+        const target = portfolios.find(p => p.id !== currentId);
+        if (target) {
+            setMovingItem({ id: itemId, targetId: target.id });
+        } else {
+            alert(t('no_other_portfolios') || "Create another portfolio first!");
+        }
+    };
+
+    const handleMoveConfirm = async () => {
+        if (!movingItem) return;
+        const currentId = portfolio.id || activePortfolioId;
+
+        const success = await moveItem(userId, currentId, movingItem.id, movingItem.targetId);
+        if (success) {
+            if (onMove) onMove(movingItem.id, currentId, movingItem.targetId);
+            setMovingItem(null);
+            // Close expand?
+            toggleExpand(movingItem.id);
         }
     };
 
@@ -253,10 +282,49 @@ const PortfolioList = ({ userId, portfolio = { items: [] }, prices = {}, activeP
                                     </div>
 
                                     {/* Detail 4: Action */}
-                                    <div className="flex items-center justify-end">
+                                    {/* Detail 4: Actions */}
+                                    <div className="flex flex-col gap-2 justify-end">
+                                        {/* Move UI */}
+                                        {movingItem && movingItem.id === item.id ? (
+                                            <div className="flex flex-col gap-1 w-full bg-white/5 p-1 rounded-lg animate-in fade-in slide-in-from-right-2">
+                                                <select
+                                                    value={movingItem.targetId}
+                                                    onChange={(e) => setMovingItem({ ...movingItem, targetId: e.target.value })}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    className="w-full bg-black/40 border border-white/10 rounded px-2 py-1 text-xs text-white mb-1 focus:outline-none focus:border-cs-blue"
+                                                >
+                                                    {portfolios.filter(p => p.id !== (portfolio.id || activePortfolioId)).map(p => (
+                                                        <option key={p.id} value={p.id}>{p.name}</option>
+                                                    ))}
+                                                </select>
+                                                <div className="flex gap-1">
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); handleMoveConfirm(); }}
+                                                        className="flex-1 bg-green-500/20 text-green-400 hover:bg-green-500/30 py-1 rounded text-xs font-bold"
+                                                    >
+                                                        <Check size={12} className="mx-auto" />
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); setMovingItem(null); }}
+                                                        className="flex-1 bg-white/10 text-gray-400 hover:bg-white/20 py-1 rounded text-xs font-bold"
+                                                    >
+                                                        <X size={12} className="mx-auto" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleMoveInit(item.id); }}
+                                                className="px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1.5 w-full uppercase tracking-wide"
+                                                disabled={portfolios.length <= 1}
+                                            >
+                                                <ArrowRight size={14} /> {t('move') || 'Move'}
+                                            </button>
+                                        )}
+
                                         <button
                                             onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
-                                            className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 w-full justify-center md:w-auto uppercase tracking-wide"
+                                            className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1.5 w-full uppercase tracking-wide"
                                         >
                                             <Trash2 size={14} /> {t('delete')}
                                         </button>
