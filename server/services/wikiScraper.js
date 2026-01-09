@@ -149,12 +149,16 @@ const getIcon = (marketHashName) => {
     // 1. Exact Match
     if (iconMap.has(marketHashName)) return iconMap.get(marketHashName);
 
-    // 2. Fuzzy Match (Strip prefixes/wear)
+    // 2. Fuzzy Match (Strip prefixes/wear/phase)
+    // Prefixes: ★, StatTrak™, Souvenir, etc.
+    // Suffixes: (Field-Tested), (Phase 1), etc.
     let cleanName = marketHashName
-        .replace('★ ', '')
-        .replace('StatTrak™ ', '')
-        .replace('Souvenir ', '')
-        .replace(/\s\([^)]+\)$/, ''); // Remove (Field-Tested), (Factory New), etc.
+        .replace(/^★\s?/, '') // Remove Star
+        .replace(/^(StatTrak™|Souvenir)\s?/, '') // Remove Type
+        // Remove Wear/Phase/Stickers info at the end (parentheses)
+        .replace(/\s\([^)]+\)$/, '')
+        // Clean up double spaces if any
+        .trim();
 
     if (iconMap.has(cleanName)) return iconMap.get(cleanName);
 
