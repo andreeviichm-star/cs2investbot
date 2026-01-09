@@ -434,7 +434,7 @@ app.get('/api/status', (req, res) => {
 // Initial Rate Fetch & Auto-Refresh
 const startServer = async () => {
     await fetchExchangeRates();
-    await skinport.init();
+    skinport.startAutoRefresh(); // Starts init loops
 
     // Wait for external images to populate iconMap
     const { imageLoadingPromise } = require('./services/wikiScraper');
@@ -452,4 +452,3 @@ const startServer = async () => {
 startServer();
 
 setInterval(fetchExchangeRates, 3600000); // Fetch every hour
-setInterval(() => skinport.init(), 12 * 60 * 60 * 1000); // Refresh Skinport every 12h

@@ -9,8 +9,12 @@ const CACHE_TTL = 12 * 60 * 60 * 1000; // 12 hours
 // Russian Mapping for search
 const RU_MAPPING = require('../data/ru_mapping');
 
-const init = async () => {
-    if (Date.now() - lastFetch < CACHE_TTL && itemsCache.length > 0) {
+const init = async (force = false) => {
+    // If not forced and cache is fresh (30 min), skip
+    // Reduced TTL to 30 min for better accuracy
+    const CACHE_TTL = 30 * 60 * 1000;
+
+    if (!force && Date.now() - lastFetch < CACHE_TTL && itemsCache.length > 0) {
         console.log('[Skinport] Cache is fresh.');
         return;
     }
@@ -110,4 +114,14 @@ const getPrice = (marketHashName) => {
 const isLoaded = () => itemsCache.length > 0;
 const getCount = () => itemsCache.length;
 
-module.exports = { init, search, getPrice, isLoaded, getCount };
+const startAutoRefresh = () => {
+    // Initial fetch
+    init();
+    // Refresh every 30 minutes
+    setInterval(() => {
+        console.log('[Skinport] Auto-refreshing prices...');
+        init(true);
+    }, 30 * 60 * 1000);
+};
+
+module.exports = { init, search, getPrice, isLoaded, getCount, startAutoRefresh };
