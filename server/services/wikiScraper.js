@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const axios = require('axios'); // Added axios
+const axios = require('axios');
 
 const CASES_FILE = path.join(__dirname, '../data/cases.json');
 
@@ -46,10 +46,19 @@ if (localCases.length > 0) {
 const fetchExternalImages = async () => {
     try {
         console.log('[WikiScraper] Fetching external image databases...');
-        const [skinsRes, cratesRes, stickersRes] = await Promise.all([
+        const [
+            skins, crates, stickers, collections, collectibles, agents, patches, graffiti, musicKits, keys
+        ] = await Promise.all([
             axios.get('https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/skins.json'),
             axios.get('https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/crates.json'),
-            axios.get('https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/stickers.json')
+            axios.get('https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/stickers.json'),
+            axios.get('https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/collections.json'),
+            axios.get('https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/collectibles.json'),
+            axios.get('https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/agents.json'),
+            axios.get('https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/patches.json'),
+            axios.get('https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/graffiti.json'),
+            axios.get('https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/music_kits.json'),
+            axios.get('https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/keys.json')
         ]);
 
         let count = 0;
@@ -66,9 +75,16 @@ const fetchExternalImages = async () => {
             }
         };
 
-        add(skinsRes.data);
-        add(cratesRes.data);
-        add(stickersRes.data);
+        add(skins.data);
+        add(crates.data);
+        add(stickers.data);
+        add(collections.data);
+        add(collectibles.data);
+        add(agents.data);
+        add(patches.data);
+        add(graffiti.data);
+        add(musicKits.data);
+        add(keys.data);
 
         console.log(`[WikiScraper] Loaded ${count} external images.`);
 
