@@ -73,7 +73,33 @@ const scrapeCollection = async (collectionId) => {
 const searchLocalItems = (query) => {
     if (!query || query.length < 3) return [];
 
-    const lowerQuery = query.toLowerCase();
+    let lowerQuery = query.toLowerCase();
+
+    // Russian Mapping for better local search
+    const RU_MAPPING = {
+        'кейс': 'case',
+        'коллекция': 'collection',
+        'капсула': 'capsule',
+        'наклейка': 'sticker',
+        'сувенир': 'souvenir',
+        'набор': 'package',
+        'перчатки': 'gloves',
+        'нож': 'knife',
+        'авп': 'awp',
+        'калаш': 'ak-47',
+        'эмка': 'm4a',
+        'юсп': 'usp',
+        'глок': 'glock',
+        'дигл': 'desert eagle'
+    };
+
+    // Replace known Russian terms with English equivalents
+    for (const [ru, en] of Object.entries(RU_MAPPING)) {
+        if (lowerQuery.includes(ru)) {
+            lowerQuery = lowerQuery.replace(ru, en);
+        }
+    }
+
     const results = [];
     const seenNames = new Set();
 
