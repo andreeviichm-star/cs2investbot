@@ -421,24 +421,25 @@ app.delete('/api/portfolio/:userId/:portfolioId/items/:itemId', async (req, res)
 });
 
 // Initial Rate Fetch & Auto-Refresh (Every Hour)
-// Initial Rate Fetch & Auto-Refresh (Every Hour)
-fetchExchangeRates(); // Fetch immediately on start
-skinport.init(); // Fetch Skinport items
+// Initial Rate Fetch & Auto-Refresh
+const startServer = async () => {
+    await fetchExchangeRates();
+    await skinport.init();
+
+    // Wait for external images to populate iconMap
+    const { imageLoadingPromise } = require('./services/wikiScraper');
+    if (imageLoadingPromise) {
+        console.log("Waiting for external images...");
+        await imageLoadingPromise;
+        console.log("Images loaded.");
+    }
+
+    app.listen(PORT, () => {
+        console.log(`Server running on http://localhost:${PORT}`);
+    });
+};
+
+startServer();
+
 setInterval(fetchExchangeRates, 3600000); // Fetch every hour
 setInterval(() => skinport.init(), 12 * 60 * 60 * 1000); // Refresh Skinport every 12h
-
-// Status/Debug Endpoint
-app.get('/api/status', (req, res) => {
-    res.json({
-        uptime: process.uptime(),
-        skinport: {
-            loaded: skinport.isLoaded ? skinport.isLoaded() : 'unknown',
-            count: skinport.getCount ? skinport.getCount() : 'unknown'
-        },
-        searchCacheSize: searchCache ? searchCache.size : 0
-    });
-});
-
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-});
