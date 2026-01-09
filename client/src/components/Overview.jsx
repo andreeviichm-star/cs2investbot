@@ -459,7 +459,12 @@ const Overview = ({ portfolios = [], prices = {} }) => {
                                         {selectedCollection.items.map((item, idx) => {
                                             // Try to find fetched details
                                             const fetched = wikiItemDetails[item.name];
-                                            const iconUrl = item.image || (fetched?.asset_description?.icon_url ? `https://community.cloudflare.steamstatic.com/economy/image/${fetched.asset_description.icon_url}/360fx360f` : null);
+                                            // Correct image logic (full URL vs Hash)
+                                            let iconUrl = item.image;
+                                            if (!iconUrl && fetched?.asset_description?.icon_url) {
+                                                const raw = fetched.asset_description.icon_url;
+                                                iconUrl = raw.startsWith('http') ? raw : `https://community.cloudflare.steamstatic.com/economy/image/${raw}/360fx360f`;
+                                            }
                                             const price = fetched?.sell_price_text;
 
                                             return (
