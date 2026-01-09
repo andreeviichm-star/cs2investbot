@@ -427,6 +427,18 @@ skinport.init(); // Fetch Skinport items
 setInterval(fetchExchangeRates, 3600000); // Fetch every hour
 setInterval(() => skinport.init(), 12 * 60 * 60 * 1000); // Refresh Skinport every 12h
 
+// Status/Debug Endpoint
+app.get('/api/status', (req, res) => {
+    res.json({
+        uptime: process.uptime(),
+        skinport: {
+            loaded: skinport.isLoaded ? skinport.isLoaded() : 'unknown',
+            count: skinport.getCount ? skinport.getCount() : 'unknown'
+        },
+        searchCacheSize: searchCache ? searchCache.size : 0
+    });
+});
+
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });
