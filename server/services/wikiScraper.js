@@ -123,7 +123,25 @@ const searchLocalItems = (query) => {
             }
         }
     }
-    return results;
+}
+return results;
 };
 
-module.exports = { scrapeCases, scrapeCollection, searchLocalItems };
+// Map for O(1) icon lookup by market hash name
+// Populated after load
+const iconMap = new Map();
+if (localCases.length > 0) {
+    localCases.forEach(collection => {
+        if (collection.items) {
+            collection.items.forEach(item => {
+                iconMap.set(item.name, item.image);
+            });
+        }
+    });
+}
+
+const getIcon = (marketHashName) => {
+    return iconMap.get(marketHashName) || null;
+};
+
+module.exports = { scrapeCases, scrapeCollection, searchLocalItems, getIcon };

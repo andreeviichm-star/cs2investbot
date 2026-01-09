@@ -1,7 +1,9 @@
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
+const axios = require('axios');
 const { scrapeCases, scrapeCollection, searchLocalItems } = require('./services/wikiScraper');
+const skinport = require('./services/skinport');
 const supabase = require('./db');
 
 const app = express();
@@ -116,6 +118,30 @@ app.get('/api/price', async (req, res) => {
     const { name, currency = 'USD' } = req.query;
     if (!name) return res.status(400).json({ error: 'Missing name parameter' });
 
+    // 1. Try Skinport Cache first (Instant, No Rate Limit)
+    const skinportPrice = skinport.getPrice(name);
+    if (skinportPrice) {
+        // Skinport returns USD. If client asked for other, index.js or frontend handles conversion?
+        // Current architecture: `fetchSteamPrice` returns simple number. Frontend handles conversion if `currency` param passed?
+        // Wait, `fetchSteamPrice` logic fetched in specific currency ID from Steam.
+        // My `skinport.js` returns { price, currency: 'USD' }.
+        // I need to convert it if requested currency is not USD.
+
+        // Exchange Rate Logic
+        // We have `exchangeRatesCache` and `fetchExchangeRates`.
+        // Let's use them.
+        let price = skinportPrice.price;
+        if (currency !== 'USD') {
+            const rates = await fetchExchangeRates(); // { USD: 1, RUB: 100... }
+            if (rates[currency]) {
+                price = price * rates[currency];
+            }
+        }
+
+        return res.json({ success: true, price, currency });
+    }
+
+    // 2. Fallback to Steam (Slow, Rate Limited)
     const price = await fetchSteamPrice(name, currency);
     if (price !== null) {
         res.json({ success: true, price, currency });
@@ -132,54 +158,21 @@ app.get('/api/search', async (req, res) => {
     const { query } = req.query;
     if (!query) return res.status(400).json({ error: 'Missing query parameter' });
 
-    const cacheKey = query.toLowerCase();
-
-    // Check Cache
-    if (searchCache.has(cacheKey)) {
-        const { results, timestamp } = searchCache.get(cacheKey);
-        if (Date.now() - timestamp < 3600000) { // 1 hour TTL
-            console.log(`Serving search from CACHE: ${query}`);
-            return res.json({ success: true, results });
-        }
-    }
-
     try {
-        console.log(`Searching Steam (Remote): ${query}`);
-        const url = `https://steamcommunity.com/market/search/render/`;
-        const response = await axios.get(url, {
-            params: {
-                query,
-                start: 0,
-                count: 50,
-                search_descriptions: 0,
-                sort_column: 'default',
-                sort_dir: 'asc',
-                appid: 730,
-                norender: 1
-            },
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-            }
-        });
-
-        if (response.data && response.data.results) {
-            // Save to Cache
-            searchCache.set(cacheKey, {
-                results: response.data.results,
-                timestamp: Date.now()
-            });
-            res.json({ success: true, results: response.data.results });
-        } else {
-            console.log("Steam search returned empty, trying local wiki...");
-            const localResults = searchLocalItems(query);
-            res.json({ success: true, results: localResults });
+        // 1. Try Skinport (Fast, Local Cache)
+        const skinportResults = skinport.search(query);
+        if (skinportResults.length > 0) {
+            return res.json({ success: true, results: skinportResults });
         }
-    } catch (error) {
-        console.error('Search error:', error.message);
 
-        console.log("Steam search failed, using local wiki fallback...");
+        // 2. Fallback to Local Wiki Search (if Skinport misses or down)
+        console.log(`Skinport miss for "${query}", trying local wiki...`);
         const localResults = searchLocalItems(query);
         res.json({ success: true, results: localResults });
+
+    } catch (error) {
+        console.error('Search error:', error.message);
+        res.json({ success: true, results: searchLocalItems(query) });
     }
 });
 
@@ -429,8 +422,11 @@ app.delete('/api/portfolio/:userId/:portfolioId/items/:itemId', async (req, res)
 });
 
 // Initial Rate Fetch & Auto-Refresh (Every Hour)
+// Initial Rate Fetch & Auto-Refresh (Every Hour)
 fetchExchangeRates(); // Fetch immediately on start
+skinport.init(); // Fetch Skinport items
 setInterval(fetchExchangeRates, 3600000); // Fetch every hour
+setInterval(() => skinport.init(), 12 * 60 * 60 * 1000); // Refresh Skinport every 12h
 
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
