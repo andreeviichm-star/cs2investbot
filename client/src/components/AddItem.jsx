@@ -10,6 +10,14 @@ const AddItem = ({ userId, portfolios, activePortfolioId, onAdd }) => {
     const { currency, formatPrice } = useSettings();
 
     const [targetPortfolioId, setTargetPortfolioId] = useState(activePortfolioId);
+
+    // Sync state if activePortfolioId changes (e.g. initial load)
+    useEffect(() => {
+        if (activePortfolioId) {
+            setTargetPortfolioId(activePortfolioId);
+        }
+    }, [activePortfolioId]);
+
     const [name, setName] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [showResults, setShowResults] = useState(false);
@@ -205,11 +213,16 @@ const AddItem = ({ userId, portfolios, activePortfolioId, onAdd }) => {
 
                 <button
                     type="submit"
-                    disabled={loading}
-                    className="w-full bg-gradient-to-r from-cs-blue to-cs-purple text-white font-semibold py-3 rounded-lg mt-6 shadow-lg shadow-cs-blue/20 hover:shadow-cs-blue/30 transition-all active:scale-[0.98]"
+                    disabled={loading || !targetPortfolioId}
+                    className="w-full bg-gradient-to-r from-cs-blue to-cs-purple text-white font-semibold py-3 rounded-lg mt-6 shadow-lg shadow-cs-blue/20 hover:shadow-cs-blue/30 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {loading ? t('adding') : t('add_to_portfolio')}
                 </button>
+                {!targetPortfolioId && (
+                    <div className="text-red-400 text-xs text-center mt-2">
+                        {t('portfolio_empty') || "No portfolio found. Please reload or check connection."}
+                    </div>
+                )}
             </form>
         </div>
     );
