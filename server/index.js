@@ -420,6 +420,24 @@ app.delete('/api/portfolio/:userId/:portfolioId/items/:itemId', async (req, res)
     }
 });
 
+// Status/Debug Endpoint
+app.get('/api/status', (req, res) => {
+    try {
+        const { imageLoadingPromise } = require('./services/wikiScraper');
+        res.json({
+            uptime: process.uptime(),
+            skinport: {
+                loaded: skinport.isLoaded ? skinport.isLoaded() : 'unknown',
+                count: skinport.getCount ? skinport.getCount() : 'unknown'
+            },
+            searchCacheSize: searchCache ? searchCache.size : 0,
+            imagesWait: !!imageLoadingPromise
+        });
+    } catch (e) {
+        res.json({ error: e.message });
+    }
+});
+
 // Initial Rate Fetch & Auto-Refresh (Every Hour)
 // Initial Rate Fetch & Auto-Refresh
 const startServer = async () => {
