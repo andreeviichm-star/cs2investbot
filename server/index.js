@@ -113,12 +113,32 @@ const fetchSteamPrice = async (marketHashName, currencyCode = 'USD') => {
     }
 };
 
+const steamPriceScheduler = require('./services/steamPriceScheduler');
+
+// ... (previous imports)
+
 app.get('/api/price', async (req, res) => {
     const { name, currency = 'USD' } = req.query;
     if (!name) return res.status(400).json({ error: 'Missing name parameter' });
 
-    // 1. Try Skinport Cache first (Instant, No Rate Limit)
+    // 1. Precise Steam Price (Scheduler) - Highest Priority
+    // Only available for items we are tracking (in portfolios)
+    const preciseData = steamPriceScheduler.getPrice(name);
+    if (preciseData) {
+        let price = preciseData.price;
+        // Convert if needed
+        if (currency !== 'USD') {
+            const rates = await fetchExchangeRates();
+            if (rates[currency]) {
+                price = Number((price * rates[currency]).toFixed(2));
+            }
+        }
+        return res.json({ success: true, price, currency, source: 'steam_precise' });
+    }
+
+    // 2. Try Skinport Cache (Fast, No Rate Limit)
     const skinportPrice = skinport.getPrice(name);
+    // ... (rest of skinport logic)
     if (skinportPrice) {
         // Skinport returns USD. If client asked for other, index.js or frontend handles conversion?
         // Current architecture: `fetchSteamPrice` returns simple number. Frontend handles conversion if `currency` param passed?
@@ -224,16 +244,21 @@ app.get('/api/portfolio/:userId', async (req, res) => {
         // Map items to camelCase for all portfolios
         const mappedPortfolios = portfolios.map(p => ({
             ...p,
-            items: (p.items || []).map(i => ({
-                id: i.id,
-                name: i.name,
-                quantity: i.quantity,
-                buyPrice: i.buy_price,
-                currency: i.currency,
-                iconUrl: i.icon_url,
-                addedAt: i.created_at, // Map standard timestamp
-                portfolioId: i.portfolio_id
-            }))
+            items: (p.items || []).map(i => {
+                // Ensure item is tracked for precision pricing
+                steamPriceScheduler.trackItem(i.name);
+
+                return {
+                    id: i.id,
+                    name: i.name,
+                    quantity: i.quantity,
+                    buyPrice: i.buy_price,
+                    currency: i.currency,
+                    iconUrl: i.icon_url,
+                    addedAt: i.created_at, // Map standard timestamp
+                    portfolioId: i.portfolio_id
+                };
+            })
         }));
 
         res.json(mappedPortfolios);
@@ -356,15 +381,18 @@ app.post('/api/portfolio/:userId/:portfolioId/add', async (req, res) => {
         if (fetchError) throw fetchError;
 
         // Map items to camelCase
-        updatedPortfolio.items = updatedPortfolio.items.map(i => ({
-            id: i.id,
-            name: i.name,
-            quantity: i.quantity,
-            buyPrice: i.buy_price,
-            currency: i.currency,
-            iconUrl: i.icon_url,
-            addedAt: i.added_at
-        }));
+        updatedPortfolio.items = updatedPortfolio.items.map(i => {
+            if (i.name === name) steamPriceScheduler.trackItem(name);
+            return {
+                id: i.id,
+                name: i.name,
+                quantity: i.quantity,
+                buyPrice: i.buy_price,
+                currency: i.currency,
+                iconUrl: i.icon_url,
+                addedAt: i.created_at
+            };
+        });
 
         res.json({ success: true, portfolio: updatedPortfolio });
     } catch (err) {
@@ -457,6 +485,7 @@ app.get('/api/status', (req, res) => {
 const startServer = async () => {
     await fetchExchangeRates();
     skinport.startAutoRefresh(); // Starts init loops
+    steamPriceScheduler.start(); // Start precision pricing worker
 
     // Wait for external images to populate iconMap
     const { imageLoadingPromise } = require('./services/wikiScraper');

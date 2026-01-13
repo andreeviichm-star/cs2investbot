@@ -270,6 +270,7 @@ const Overview = ({ portfolios = [], prices = {} }) => {
                 view === 'stats' && (
                     // STATISTICS VIEW
                     <div className="space-y-6 animate-in slide-in-from-right duration-300">
+
                         {/* Interactive Stats Deck */}
                         <div className="flex flex-col items-center gap-4">
                             <div
